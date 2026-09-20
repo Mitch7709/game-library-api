@@ -1,22 +1,11 @@
 from fastapi import FastAPI
 
+from app.database import Base, engine
+from app.routers import games
+
+
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI()
 
-@app.get("/")
-def root():
-    return {"message": "Game Library API"}
-
-@app.get("/games")
-def get_games():
-    return [
-        {
-            "id": 1,
-            "title": "Elden Ring",
-            "genre": "Action RPG"
-        },
-        {
-            "id": 2,
-            "title": "Hades",
-            "genre": "Roguelike"
-        }
-    ]
+app.include_router(games.router)
