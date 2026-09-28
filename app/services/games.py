@@ -2,7 +2,8 @@ from sqlalchemy.orm import Session
 
 from app.models import Game
 from app.repositories import games as game_repository
-from app.schemas import GameCreate, GameUpdate
+from app.schemas import GameCreate, GamePatch
+from app.services.exceptions import GameNotFoundError
 
 def get_all_games(db: Session) -> list[Game]:
     return game_repository.get_all(db)
@@ -10,8 +11,13 @@ def get_all_games(db: Session) -> list[Game]:
 def get_game(
         db: Session,
         game_id: int
-) -> Game | None:
-    return game_repository.get_by_id(db, game_id)
+) -> Game:
+    game = game_repository.get_by_id(db, game_id)
+
+    if game is None:
+        raise GameNotFoundError(game_id)
+
+    return game
 
 def create_game(
         db: Session,
@@ -31,17 +37,14 @@ def create_game(
 def update_game(
         db: Session,
         game: Game,
-        game_data: GameUpdate
+        game_data: GamePatch
 ) -> Game:
-    game.title = game_data.title
-    game.genre = game_data.genre
-    game.developer = game_data.developer
-    game.release_year = game_data.release_year
-    game.completed = game_data.completed
-    game.rating = game_data.rating
+    updates = game_data.model_dump(exclude_unset=True)
+
+    for field, value in updates.items():
+        setattr(game, field, value)
 
     return game_repository.update(db, game)
-
 
 def delete_game(
         db: Session,
